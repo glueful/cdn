@@ -9,4 +9,10 @@
             <directory>tests</directory>
         </testsuite>
     </testsuites>
+    <php>
+        <!-- Keep the suite deterministic and Redis-free: the framework's cache
+             driver defaults to 'redis' (which fatals without the ext); array cache
+             needs no service. Mirrors the framework's own phpunit.xml convention. -->
+        <env name="CACHE_DRIVER" value="array"/>
+    </php>
 </phpunit>

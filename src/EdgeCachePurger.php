@@ -3,9 +3,7 @@
 namespace Glueful\Extensions\Cdn;
 
 use Glueful\Bootstrap\ApplicationContext;
-use Glueful\Cache\CacheStore;
 use Glueful\Extensions\Cdn\Adapters\CDNAdapterInterface;
-use Glueful\Helpers\CacheHelper;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -34,13 +32,6 @@ final class EdgeCachePurger implements \Glueful\Cache\Contracts\EdgeCacheInterfa
     private ApplicationContext $context;
 
     /**
-     * The cache store instance
-     *
-     * @var CacheStore<mixed>|null
-     */
-    private ?CacheStore $cacheStore = null;
-
-    /**
      * The CDN adapter instance
      *
      * @var CDNAdapterInterface|null
@@ -67,14 +58,12 @@ final class EdgeCachePurger implements \Glueful\Cache\Contracts\EdgeCacheInterfa
         $this->context = $context;
         $this->config = $config;
 
-        // Resolve the cache store via the helper fallback.
-        $this->cacheStore = CacheHelper::createCacheInstance();
-        if ($this->cacheStore === null) {
-            // Log but continue - edge cache service might work without local cache
-            error_log('EdgeCachePurger: Could not create CacheStore instance');
-        }
-
-        // Resolve the CDN adapter from configuration.
+        // No eager cache-store creation here: the purger never uses a local cache
+        // store, and creating one in the constructor reached the framework's
+        // CacheFactory and could fatal (e.g. `Class "Redis" not found`) when the
+        // configured driver is unavailable — crashing container build. Boot must
+        // stay safe; the only construction-time work is resolving the CDN adapter,
+        // which itself degrades to disabled/no-op on any failure (never throws).
         $this->cdnAdapter = $this->resolveAdapter();
     }
 
