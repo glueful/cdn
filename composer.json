@@ -1,0 +1,43 @@
+{
+    "name": "glueful/cdn",
+    "description": "CDN / edge-cache integration for Glueful (edge headers, purge, provider adapters).",
+    "type": "glueful-extension",
+    "license": "MIT",
+    "authors": [{ "name": "Michael Tawiah Sowah", "email": "michael@glueful.dev" }],
+    "keywords": ["cdn", "edge-cache", "cache", "glueful"],
+    "require": {
+        "php": "^8.3"
+    },
+    "require-dev": {
+        "glueful/framework": "^1.52.0",
+        "phpunit/phpunit": "^10.5",
+        "squizlabs/php_codesniffer": "^3.6",
+        "phpstan/phpstan": "^1.0"
+    },
+    "homepage": "https://github.com/glueful/cdn",
+    "autoload": {
+        "psr-4": { "Glueful\\Extensions\\Cdn\\": "src/" }
+    },
+    "autoload-dev": {
+        "psr-4": { "Glueful\\Extensions\\Cdn\\Tests\\": "tests/" }
+    },
+    "scripts": {
+        "test": "vendor/bin/phpunit",
+        "phpcs": "vendor/bin/phpcs --standard=PSR12 src",
+        "phpcbf": "vendor/bin/phpcbf --standard=PSR12 src",
+        "analyze": "vendor/bin/phpstan analyse"
+    },
+    "extra": {
+        "glueful": {
+            "name": "CDN",
+            "displayName": "CDN / Edge Cache",
+            "description": "CDN / edge-cache integration for Glueful.",
+            "version": "1.0.0",
+            "categories": ["cache", "cdn"],
+            "publisher": "glueful-team",
+            "provider": "Glueful\\Extensions\\Cdn\\CdnServiceProvider",
+            "requires": { "glueful": ">=1.52.0", "extensions": [] }
+        }
+    },
+    "config": { "sort-packages": true }
+}
