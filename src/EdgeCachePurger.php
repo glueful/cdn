@@ -6,6 +6,7 @@ use Glueful\Bootstrap\ApplicationContext;
 use Glueful\Cache\CacheStore;
 use Glueful\Extensions\Cdn\Adapters\CDNAdapterInterface;
 use Glueful\Helpers\CacheHelper;
+use Psr\Log\LoggerInterface;
 
 /**
  * Edge caching service for the CDN extension.
@@ -27,6 +28,11 @@ use Glueful\Helpers\CacheHelper;
  */
 final class EdgeCachePurger implements \Glueful\Cache\Contracts\EdgeCacheInterface
 {
+    /**
+     * The application context (used for logger resolution on failures)
+     */
+    private ApplicationContext $context;
+
     /**
      * The cache store instance
      *
@@ -52,13 +58,13 @@ final class EdgeCachePurger implements \Glueful\Cache\Contracts\EdgeCacheInterfa
     /**
      * Constructor for the Edge Cache Purger
      *
-     * @param ApplicationContext $context The application context (reserved for adapter resolution)
+     * @param ApplicationContext $context The application context (used for logging on adapter-resolution failures)
      * @param array<string, mixed> $config The `cdn` config block
      * @phpstan-param EdgeCacheConfig $config
      */
     public function __construct(ApplicationContext $context, array $config)
     {
-        unset($context);
+        $this->context = $context;
         $this->config = $config;
 
         // Resolve the cache store via the helper fallback.
@@ -214,34 +220,98 @@ final class EdgeCachePurger implements \Glueful\Cache\Contracts\EdgeCacheInterfa
     /**
      * Resolve a CDN adapter from the injected configuration.
      *
-     * Basic resolution: read the configured provider name, look it up in the
-     * `adapters` name->class map, and instantiate the class when it exists.
-     * A missing provider, missing map entry, or missing class yields null
-     * (never throws). Hardened resolution (try/catch, instanceof checks, the
-     * degrade-to-disabled failure modes and logging) is handled in a later task.
+     * Implements the degrade-to-disabled contract: this method NEVER throws and
+     * returns null on any of the following failure modes, leaving the purger
+     * disabled (so every method no-ops exactly like a null edge cache):
+     *
+     *   (a) the configured provider is unset or empty;
+     *   (b) the provider names a key absent from the `adapters` map;
+     *   (c) the mapped class does not exist or is not a CDNAdapterInterface;
+     *   (d) the adapter constructor throws.
+     *
+     * Failure modes (c) and (d) are logged as warnings; a missing/empty
+     * provider (a) and an unknown provider (b) are normal "disabled"
+     * configurations and are not logged.
      *
      * @return CDNAdapterInterface|null The resolved CDN adapter, or null if none could be resolved
      */
     private function resolveAdapter(): ?CDNAdapterInterface
     {
+        // (a) No provider configured -> disabled (not an error).
         $provider = $this->config['provider'] ?? '';
         if ($provider === '') {
             return null;
         }
 
+        // (b) Provider not present in the adapters map -> disabled (not an error).
         $adapters = $this->config['adapters'] ?? [];
         if (!isset($adapters[$provider])) {
             return null;
         }
 
         $adapterClass = $adapters[$provider];
+
+        // (c) Mapped class missing -> degrade to disabled, log a warning.
         if (!class_exists($adapterClass)) {
+            $this->logResolutionFailure(sprintf(
+                "CDN adapter class '%s' for provider '%s' does not exist.",
+                $adapterClass,
+                $provider
+            ));
             return null;
         }
 
-        /** @var CDNAdapterInterface $adapter */
-        $adapter = new $adapterClass($this->config);
+        try {
+            $adapter = new $adapterClass($this->config);
+        } catch (\Throwable $e) {
+            // (d) Constructor threw -> degrade to disabled, log a warning.
+            $this->logResolutionFailure(sprintf(
+                "CDN adapter '%s' for provider '%s' failed to construct: %s",
+                $adapterClass,
+                $provider,
+                $e->getMessage()
+            ));
+            return null;
+        }
+
+        // (c) Constructed object is not a CDN adapter -> degrade to disabled, log.
+        if (!$adapter instanceof CDNAdapterInterface) {
+            $this->logResolutionFailure(sprintf(
+                "CDN adapter class '%s' for provider '%s' does not implement %s.",
+                $adapterClass,
+                $provider,
+                CDNAdapterInterface::class
+            ));
+            return null;
+        }
 
         return $adapter;
+    }
+
+    /**
+     * Log an adapter-resolution failure as a warning.
+     *
+     * Prefers a PSR-3 logger resolved from the container; falls back to
+     * error_log when no logger is available (mirrors the framework's
+     * EdgeCacheService failure-logging style).
+     *
+     * @param string $message The failure message
+     */
+    private function logResolutionFailure(string $message): void
+    {
+        try {
+            $container = container($this->context);
+            if ($container->has(LoggerInterface::class)) {
+                $logger = $container->get(LoggerInterface::class);
+                if ($logger instanceof LoggerInterface) {
+                    $logger->warning('EdgeCachePurger: ' . $message);
+                    return;
+                }
+            }
+        } catch (\Throwable) {
+            // Fall through to error_log below.
+        }
+
+        error_log('EdgeCachePurger: ' . $message);
     }
 }
