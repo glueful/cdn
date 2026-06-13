@@ -187,7 +187,7 @@ abstract class AbstractCDNAdapter implements CDNAdapterInterface
         // Check for wildcard matches
         foreach ($rules as $pattern => $config) {
             if (strpos($pattern, '*') !== false) {
-                $regex = '/^' . str_replace('*', '.*', $pattern) . '$/';
+                $regex = '/^' . str_replace('\*', '.*', preg_quote($pattern, '/')) . '$/';
                 if (preg_match($regex, $route)) {
                     return $config;
                 }
