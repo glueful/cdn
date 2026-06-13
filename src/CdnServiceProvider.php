@@ -12,7 +12,10 @@ use Psr\Container\ContainerInterface;
 
 final class CdnServiceProvider extends \Glueful\Extensions\ServiceProvider
 {
-    public static function services(): array
+    /**
+     * @return array<string, mixed>
+     */
+    public static function defs(): array
     {
         return [
             EdgeCacheInterface::class => new FactoryDefinition(

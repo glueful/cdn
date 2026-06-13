@@ -112,7 +112,7 @@ final class AdapterFailureBootTest extends TestCase
         $context->setContainer($container);
 
         // CDN provider applied last (last-provider-wins).
-        $container->load(CdnServiceProvider::services());
+        $container->load(CdnServiceProvider::defs());
 
         return [$container, $logger];
     }

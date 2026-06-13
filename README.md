@@ -157,6 +157,12 @@ The user then selects it by setting `EDGE_CACHE_PROVIDER=acme` (or
 `Glueful\Extensions\Cdn\Adapters\CDNAdapterInterface` (extending
 `AbstractCDNAdapter` is the easy path).
 
+Before shipping a concrete provider adapter, follow
+[docs/ADAPTER_AUTHORING.md](docs/ADAPTER_AUTHORING.md): redact provider
+credentials from logs/errors, allowlist purge URL hosts to avoid SSRF, enforce
+provider API timeouts, preserve the base cacheability contract, and keep adapter
+construction non-fatal during boot.
+
 ### Degrade-to-disabled behavior
 
 `EdgeCachePurger` **never throws** during adapter resolution. It silently
