@@ -15,6 +15,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Fixed
 
+- **Default cacheability safety.** The base adapter now refuses to cache authenticated requests,
+  cookie-bearing requests, and responses that set cookies, and treats `Cache-Control` directives
+  case-insensitively.
 - **Wildcard route matching.** Route cache rules now escape regex metacharacters before expanding
   `*`, so patterns such as `admin.*` only match a literal dot plus suffix.
 - **Boot compatibility with framework 1.55.** The service provider declared its bindings via the

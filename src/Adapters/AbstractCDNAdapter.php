@@ -132,15 +132,25 @@ abstract class AbstractCDNAdapter implements CDNAdapterInterface
             return false;
         }
 
+        if (
+            $this->getHeader($request, 'Authorization') !== '' ||
+            $this->getHeader($request, 'Cookie') !== ''
+        ) {
+            return false;
+        }
+
         // Do not cache error responses
         // @phpstan-ignore-next-line method.notFound (duck-typed HTTP response object)
         if ($response->getStatusCode() >= 400) {
             return false;
         }
 
+        if ($this->getHeader($response, 'Set-Cookie') !== '') {
+            return false;
+        }
+
         // Do not cache responses with specific cache-control directives
-        // @phpstan-ignore-next-line property.notFound (duck-typed HTTP response object)
-        $cacheControl = $response->headers->get('Cache-Control', '');
+        $cacheControl = strtolower($this->getHeader($response, 'Cache-Control'));
         if (
             str_contains($cacheControl, 'no-store') ||
             str_contains($cacheControl, 'no-cache') ||
@@ -150,6 +160,21 @@ abstract class AbstractCDNAdapter implements CDNAdapterInterface
         }
 
         return true;
+    }
+
+    private function getHeader(object $message, string $name): string
+    {
+        if (!property_exists($message, 'headers')) {
+            return '';
+        }
+
+        $headers = $message->headers;
+        if (!is_object($headers) || !method_exists($headers, 'get')) {
+            return '';
+        }
+
+        $value = $headers->get($name, '');
+        return is_scalar($value) ? (string) $value : '';
     }
 
     /**
