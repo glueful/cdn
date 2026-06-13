@@ -8,6 +8,9 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Added
 
+- **CDN adapter-authoring guide.** Documents the security contract for future concrete adapters:
+  credential redaction, purge URL host allowlisting, provider API timeouts, cacheability safety, and
+  non-fatal adapter construction.
 - **Discovery-path regression test.** Loads the provider through the framework's real
   extension-discovery dispatch (`defs()` pass-through, else `services()` via the DSL loader),
   guarding against typed `Definition` objects being returned from `services()` — a regression the
