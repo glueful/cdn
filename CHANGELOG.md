@@ -15,6 +15,8 @@ The format is based on Keep a Changelog, and this project adheres to Semantic Ve
 
 ### Fixed
 
+- **CLI option accuracy.** Removed the unimplemented `cache:purge --provider` and `--timeout`
+  options; provider selection remains config-driven through `cdn.provider`.
 - **Default cacheability safety.** The base adapter now refuses to cache authenticated requests,
   cookie-bearing requests, and responses that set cookies, and treats `Cache-Control` directives
   case-insensitively.

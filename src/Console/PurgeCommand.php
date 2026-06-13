@@ -88,19 +88,6 @@ class PurgeCommand extends BaseCommand
                  'f',
                  InputOption::VALUE_NONE,
                  'Force purge without confirmation prompts'
-             )
-             ->addOption(
-                 'timeout',
-                 null,
-                 InputOption::VALUE_REQUIRED,
-                 'Timeout for purge operations in seconds',
-                 '30'
-             )
-             ->addOption(
-                 'provider',
-                 null,
-                 InputOption::VALUE_REQUIRED,
-                 'Specific edge cache provider to use'
              );
     }
 
