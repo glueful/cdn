@@ -7,7 +7,9 @@ namespace Glueful\Extensions\Cdn\Tests\Unit;
 use Glueful\Bootstrap\ApplicationContext;
 use Glueful\Cache\Contracts\EdgeCacheInterface;
 use Glueful\Container\Definition\AliasDefinition;
+use Glueful\Container\Definition\DefinitionInterface;
 use Glueful\Container\Definition\FactoryDefinition;
+use Glueful\Container\Loader\DefaultServicesLoader;
 use Glueful\Extensions\Cdn\CdnServiceProvider;
 use Glueful\Extensions\Cdn\EdgeCachePurger;
 use PHPUnit\Framework\TestCase;
@@ -17,15 +19,42 @@ final class CdnServiceProviderTest extends TestCase
 {
     public function testServicesRegistersEdgeCacheInterfaceFactory(): void
     {
-        $services = CdnServiceProvider::services();
+        $services = CdnServiceProvider::defs();
 
         self::assertArrayHasKey(EdgeCacheInterface::class, $services);
         self::assertInstanceOf(FactoryDefinition::class, $services[EdgeCacheInterface::class]);
     }
 
+    /**
+     * Discovery-path guard. Loads the provider the way ContainerFactory::loadExtensionDefinitions
+     * does: a `defs()` map passes through as DefinitionInterface objects; a `services()` map is
+     * compiled by DefaultServicesLoader, which REJECTS non-array specs. Fails loudly if typed
+     * Definition objects are ever returned from `services()` (they belong in `defs()`).
+     */
+    public function testLoadsThroughExtensionDiscoveryDispatch(): void
+    {
+        $provider = CdnServiceProvider::class;
+
+        if (method_exists($provider, 'defs')) {
+            $defs = (array) $provider::defs();
+        } else {
+            $defs = (new DefaultServicesLoader())->load($provider::services(), $provider, false);
+        }
+
+        self::assertNotEmpty($defs);
+        self::assertArrayHasKey(EdgeCacheInterface::class, $defs);
+        foreach ($defs as $id => $def) {
+            self::assertInstanceOf(
+                DefinitionInterface::class,
+                $def,
+                "Definition for '{$id}' must be a DefinitionInterface after discovery-path loading"
+            );
+        }
+    }
+
     public function testServicesAliasesConcretePurgerToInterface(): void
     {
-        $services = CdnServiceProvider::services();
+        $services = CdnServiceProvider::defs();
 
         self::assertArrayHasKey(EdgeCachePurger::class, $services);
 
@@ -36,7 +65,7 @@ final class CdnServiceProviderTest extends TestCase
 
     public function testFactoryDefinitionResolvesToEdgeCachePurger(): void
     {
-        $services = CdnServiceProvider::services();
+        $services = CdnServiceProvider::defs();
         /** @var FactoryDefinition $factory */
         $factory = $services[EdgeCacheInterface::class];
 

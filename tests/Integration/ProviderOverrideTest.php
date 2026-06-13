@@ -52,7 +52,7 @@ final class OverrideStubAdapter extends AbstractCDNAdapter
  * CoreProvider.
  *
  * Harness: build the real framework Container, load core's null binding FIRST,
- * then load CdnServiceProvider::services() AFTER. Container::load() overwrites
+ * then load CdnServiceProvider::defs() AFTER. Container::load() overwrites
  * by id, mirroring provider-registration order.
  */
 final class ProviderOverrideTest extends TestCase
@@ -82,7 +82,7 @@ final class ProviderOverrideTest extends TestCase
         $context->setContainer($container);
 
         // 2. CDN provider definitions applied AFTER core (last-provider-wins).
-        $container->load(CdnServiceProvider::services());
+        $container->load(CdnServiceProvider::defs());
 
         return $container;
     }
