@@ -32,7 +32,7 @@
             "name": "CDN",
             "displayName": "CDN / Edge Cache",
             "description": "CDN / edge-cache integration for Glueful.",
-            "version": "1.0.1",
+            "version": "1.1.0",
             "categories": ["cache", "cdn"],
             "publisher": "glueful-team",
             "provider": "Glueful\\Extensions\\Cdn\\CdnServiceProvider",
